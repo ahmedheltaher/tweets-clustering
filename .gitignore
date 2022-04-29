@@ -127,3 +127,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# script generated files
+dataset/csv/
+dataset/csv/**/*
