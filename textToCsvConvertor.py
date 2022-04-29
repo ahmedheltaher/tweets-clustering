@@ -1,4 +1,5 @@
 import csv  # Import the csv module
+import re
 from datetime import datetime  # Import the datetime module
 from os import listdir, mkdir  # Import the listdir function from the os module
 from os.path import (  # Import the isfile and join functions from the os.path module
@@ -8,6 +9,8 @@ from tqdm import tqdm  # Import the tqdm module
 
 INPUT_DIRECTORY = './dataset/original' # The directory where the txt files are located
 OUTPUT_DIRECTORY = './dataset/csv' # The directory where the csv files will be saved
+
+PATTERN = r'(?i)\b((?:[a-z][\w-]+:(?:/{1,3}|[a-z0-9%])|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:\'".,<>?«»“”‘’]))'
 
 def filesInDirectory(dir: str) -> list[str]:
 	'''
@@ -54,10 +57,25 @@ def formatData(data: str) -> list[str]:
 	'''
 	try:
 		id, dateTimeText, *wholeTweet = data.split('|') # Split the data into id, dateTimeText, and the rest of the tweet
-		wholeTweet = ''.join(wholeTweet).split(' ') # Split the rest of the tweet into words
-		tweet, link = ' '.join(wholeTweet[:-1]), wholeTweet[-1] # Get the tweet and the link
+		wholeTweet = ''.join(wholeTweet) # Join the rest of the tweet
+		
+		# extract the link from the tweet
+		extractedLinks = re.findall(PATTERN, wholeTweet) # Find all the links in the tweet
+		links = '' # Initialize the link
+
+		for extractedLink in extractedLinks: # Iterate through the links
+			links += f"{extractedLink[0]}," # Add the link to the links string
+			wholeTweet = wholeTweet.replace(extractedLink[0], '') # Remove the link from the tweet
+			break
+		
+		tweet = wholeTweet.strip() # Remove the whitespace from the tweet
+
+		if links != '': # If there are links
+			links = links[:-1] if links[-1] == ',' else links # Remove the last comma if it exists
+			links = links.strip() # Remove the whitespace from the link
+
 		dateTimeObject = datetime.strptime(dateTimeText, '%a %b %d %H:%M:%S %z %Y') # Convert the dateTimeText to a datetime object
-		return [id, dateTimeObject.date(), dateTimeObject.time(), tweet, link] # Return the formatted data
+		return [id, dateTimeObject.date(), dateTimeObject.time(), tweet, links] # Return the formatted data
 	except ValueError:
 		# Catch the error if the data is not in the correct format and return an empty list
 		# This is to prevent the program from crashing
@@ -84,13 +102,13 @@ def textToCsv(fileName: str):
 			>>> textToCsv('foxnewshealth')
 			# Writes the csv file to the output directory
 	'''
-	with open(f'{ INPUT_DIRECTORY }/{ fileName }.txt', 'r', encoding='cp437') as textFile: # Open the text file
+	with open(f'{ INPUT_DIRECTORY }/{ fileName }.txt', 'r', encoding='ISO-8859-1') as textFile:  # Open the text file
 		dataLines = textFile.read().splitlines() # Get the data from the text file as a list of lines
-		data = [formatData(line) for line in dataLines] # Iterate through the data and format it
+		data = [formatData(line) for line in tqdm(dataLines, desc=f"Formating {fileName}")] # Iterate through the data and format it
 
 		with open(f'{ OUTPUT_DIRECTORY }/{ fileName }.csv', 'w', encoding='utf-8') as csvFile: # Open the csv file
 			writer = csv.writer(csvFile) # Create a csv.writer object
-			writer.writerow(['id', 'date', 'time', 'tweet', 'link']) # Write the header
+			writer.writerow(['id', 'date', 'time', 'tweet', 'links']) # Write the header
 			# Write the data to the csv file (Note: the data is a list of lists of strings) &
 			# (Note: the csv.writerow() function will ignore empty lists)
 			writer.writerows(data) 
@@ -127,7 +145,7 @@ def main():
 
 	files = filesInDirectory(INPUT_DIRECTORY) # Get the list of files in the input directory
 	
-	for file in tqdm(files): # tqdm is a progress bar
+	for file in tqdm(files, desc="Formating Files"): # tqdm is a progress bar
 		textToCsv(file.split('.')[0]) # Splits the file name and removes the extension
 
 	print('\nConversion is Done Successfully!') # Print a message to the console
