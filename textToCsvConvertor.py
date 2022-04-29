@@ -1,8 +1,8 @@
 import csv  # Import the csv module
 from datetime import datetime  # Import the datetime module
-from os import listdir  # Import the listdir function from the os module
+from os import listdir, mkdir  # Import the listdir function from the os module
 from os.path import (  # Import the isfile and join functions from the os.path module
-    isfile, join)
+    exists, isfile, join)
 
 from tqdm import tqdm  # Import the tqdm module
 
@@ -113,6 +113,15 @@ def main():
 			>>> main()
 			# The main function
 	'''
+
+	if not exists(INPUT_DIRECTORY): # Check if the input directory exists
+		print(f'The input directory { INPUT_DIRECTORY } does not exist\n')
+		return
+
+	if not exists(OUTPUT_DIRECTORY):  # If the output directory does not exist create it
+		print(f'The out directory { INPUT_DIRECTORY } does not exist, the script will create it for you, please wait...\n')
+		mkdir(OUTPUT_DIRECTORY)
+		print('Finished creating the output directory\n')
 
 	print('Converting text files to csv files...\n')
 
