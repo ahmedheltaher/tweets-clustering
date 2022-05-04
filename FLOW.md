@@ -7,5 +7,6 @@ This file will contain the flow of the app till last commit
 ```mermaid
 flowchart TD
   A[Start] -- run 'textToCsvConvertor.py' --> B[Files Conversion];
-  B --> C[End];
+  B -- run 'dataFormatter' --> C[Format Data];
+  C --> D[End]
 ```
