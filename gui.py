@@ -58,6 +58,7 @@
 #window = MainWindow()
 #window.show()
 
+import collections
 import csv
 import math
 import random as rd
@@ -66,6 +67,7 @@ import string
 from typing import List
 
 import mplcursors
+import numpy as np
 from matplotlib import pyplot as plt
 
 
@@ -116,9 +118,10 @@ def pre_process_tweets(url):
     return list_of_tweets
 
 
-def k_means(tweets, clustersCount=4, max_iterations=50):
+def k_means(tweets, clustersCount=4, maxIterations=50):
     centroids = []
-
+    interactionNumber = 0
+    previousCentroids = []
 
     # initialization, assign random tweets as centroids
     indicesTable = {}
@@ -128,107 +131,95 @@ def k_means(tweets, clustersCount=4, max_iterations=50):
             indicesTable[randomIndex] = True
             centroids.append(tweets[randomIndex])
 
-
-
-    iter_count = 0
-    prev_centroids = []
-
     # run the iterations until not converged or until the max iteration in not reached
-    while (not(is_converged(prev_centroids, centroids)) and (iter_count < max_iterations)) :
+    while not is_converged(previousCentroids, centroids) and interactionNumber < maxIterations:
 
-        print("running iteration " + str(iter_count))
+        print("running iteration " + str(interactionNumber))
 
         # assignment, assign tweets to the closest centroids
         clusters = assign_cluster(tweets, centroids)
 
-        # to check if k-means converges, keep track of prev_centroids
-        prev_centroids = centroids
+        # to check if k-means converges, keep track of previousCentroids
+        previousCentroids = centroids.copy()
 
         # update, update centroid based on clusters formed
         centroids = update_centroids(clusters)
-        iter_count = iter_count + 1
+        interactionNumber += 1
 
-    if (iter_count == max_iterations):
+    if (interactionNumber == maxIterations):
         print("max iterations reached, K means not converged")
     else:
         print("converged")
 
     sse = compute_SSE(clusters)
 
-    return clusters, sse, centroids
+    return clusters, sse
 
 
-def is_converged(prev_centroid, new_centroids):
-    return prev_centroid == new_centroids
-
+def is_converged(previousCentroid: List[any], newCentroids: List[any]) -> bool:
+    previousCentroid = np.array(previousCentroid, dtype=object)
+    newCentroids = np.array(newCentroids, dtype=object)
+    return np.array_equal(previousCentroid, newCentroids)
 
 def assign_cluster(tweets, centroids):
-    clusters = dict()
+    clusters = {}
 
     # for every tweet iterate each centroid and assign closest centroid to a it
-    for t in range(len(tweets)):
-        min_dis = math.inf
-        cluster_idx = -1;
-        for c in range(len(centroids)):
-            dis = getDistance(centroids[c], tweets[t])
-            # look for a closest centroid for a tweet
+    for tweet in tweets:
+        minDistance = float('inf')
+        closestCentroid = None
 
-            if centroids[c] == tweets[t]:
-                # print("tweet and centroid are equal with c: " + str(c) + ", t" + str(t))
-                cluster_idx = c
-                min_dis = 0
+        for index, centroid in enumerate(centroids):
+            if centroid == tweet:
+                closestCentroid = index
+                minDistance = 0
                 break
 
-            if dis < min_dis:
-                cluster_idx = c
-                min_dis = dis
+            distance = getDistance(centroid, tweet)
+            if distance < minDistance:
+                minDistance = distance
+                closestCentroid = index
 
-        # randomise the centroid assignment to a tweet if nothing is common
-        if min_dis == 1:
-            cluster_idx = rd.randint(0, len(centroids) - 1)
+        if minDistance == 1:
+            closestCentroid = rd.randint(0, len(centroids) - 1)
 
-        # assign the closest centroid to a tweet
-        clusters.setdefault(cluster_idx, []).append([tweets[t]])
-        # print("tweet t: " + str(t) + " is assigned to cluster c: " + str(cluster_idx))
-        # add the tweet distance from its closest centroid to compute sse in the end
-        last_tweet_idx = len(clusters.setdefault(cluster_idx, [])) - 1
-        clusters.setdefault(cluster_idx, [])[last_tweet_idx].append(min_dis)
+        if clusters.get(closestCentroid) is None:
+            clusters[closestCentroid] = []
+        clusters[closestCentroid].append([tweet])
+        lastTweetIndex = len(clusters[closestCentroid]) - 1
+        clusters[closestCentroid][lastTweetIndex].append(minDistance)
 
     return clusters
-
 
 def update_centroids(clusters):
     centroids = []
 
     # iterate each cluster and check for a tweet with closest distance sum with all other tweets in the same cluster
     # select that tweet as the centroid for the cluster
-    for c in range(len(clusters)):
-        min_dis_sum = math.inf
-        centroid_idx = -1
+    for cluster in clusters.keys():
+        minDistanceSum = float('inf')
+        closestTweet = -1
 
-        # to avoid redundant calculations
-        min_dis_dp = []
+        distanceMemory = []
 
-        for t1 in range(len(clusters[c])):
-            min_dis_dp.append([])
-            dis_sum = 0
-            # get distances sum for every of tweet t1 with every tweet t2 in a same cluster
-            for t2 in range(len(clusters[c])):
-                if t2 < t1:
-                    dis = min_dis_dp[t2][t1]
+        for index, tweet in enumerate(clusters[cluster]):
+            distanceMemory.append([])
+            distanceSum = 0
+            for otherIndex, otherTweet in enumerate(clusters[cluster]):
+                if otherIndex < index:
+                    distance = distanceMemory[otherIndex][index]
                 else:
-                    dis = getDistance(clusters[c][t1][0], clusters[c][t2][0])
+                    distance = getDistance(tweet[0], otherTweet[0])
 
-                min_dis_dp[t1].append(dis)
-                dis_sum += dis
+                distanceMemory[index].append(distance)
+                distanceSum += distance
 
-            # select the tweet with the minimum distances sum as the centroid for the cluster
-            if dis_sum < min_dis_sum:
-                min_dis_sum = dis_sum
-                centroid_idx = t1
 
-        # append the selected tweet to the centroid list
-        centroids.append(clusters[c][centroid_idx][0])
+            if distanceSum < minDistanceSum:
+                minDistanceSum = distanceSum
+                closestTweet = index
+
+        centroids.append(clusters[cluster][closestTweet][0])
 
     return centroids
 
@@ -242,21 +233,10 @@ def compute_SSE(clusters):
             sse += tweet[1] ** 2
     return sse
 
-def read_csv(file_name):
-    with open(file_name, 'r', encoding='utf-8') as file:  # Open the text file
-
-        reader = csv.reader(file)
-        next(reader)  # Skip the first line
-        data = [row[3].split(" ") for row in reader]  # Read the file as a list of lists
-
-    return data
-
-
 if __name__ == '__main__':
 
     data_url = 'dataset/original/everydayhealth.txt'
 
-    #csv_tweets = read_csv(data_url)
 
     tweets = pre_process_tweets(data_url)
 
@@ -271,8 +251,7 @@ if __name__ == '__main__':
 
         print("------ Running K means for experiment no. " + str((e + 1)) + " for k = " + str(clustersCount))
 
-        clusters, sse, centroids = k_means(tweets, clustersCount)
-        size = [len(cluster) for cluster in clusters.values()]
+        clusters, sse = k_means(tweets, clustersCount)
         sses.append(sse)
         
         print("--> SSE : " + str(sse))
@@ -286,10 +265,11 @@ if __name__ == '__main__':
     plt.figure(figsize=(10, 10))
 
 
-    plt.plot([i for i in range(experiments)], sses, marker='o', color='b', linestyle='--', label='SSE', linewidth=2)
+    plt.plot([i + 1 for i in range(experiments)], sses, marker='o', color='b', linestyle='--', label='SSE', linewidth=2)
     plt.xlabel('Experiment')
     plt.ylabel('SSE')
     plt.title('SSE vs Experiment')
     mplcursors.cursor(hover=True)
+    plt.legend()
 
     plt.show()
