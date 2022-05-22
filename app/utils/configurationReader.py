@@ -18,7 +18,7 @@ class Dict(dict):
 	__delattr__ = dict.__delitem__
 
 
-class Confugration(object):
+class Configuration(object):
 	'''
 		This class is used to load the config file
 
@@ -32,7 +32,7 @@ class Confugration(object):
 
 		Example
 		-------
-			>>> config = Confugration.load_json("./config.json")
+			>>> config = Configuration.load_json("./config.json")
 			# This will load the config file
 			Using the config file:
 			>>> config.inputDirectory
@@ -58,11 +58,11 @@ class Confugration(object):
 
 			Example
 			-------
-				>>> Confugration.__load__(data)
+				>>> Configuration.__load__(data)
 				# This will load the data
 		'''
 		if type(data) is dict:
-			return Confugration.load_dict(data)
+			return Configuration.load_dict(data)
 		return data
 
 	@staticmethod
@@ -82,12 +82,12 @@ class Confugration(object):
 
 			Example
 			-------
-				>>> Confugration.load_dict(data)
+				>>> Configuration.load_dict(data)
 				# This will load the data
 		'''
 		result = Dict()
 		for key, value in data.items():
-			result[key] = Confugration.__load__(value)
+			result[key] = Configuration.__load__(value)
 		return result
 
 	@staticmethod
@@ -107,9 +107,9 @@ class Confugration(object):
 
 			Example
 			-------
-				>>> Confugration.load_json(configPath)
+				>>> Configuration.load_json(configPath)
 				# This will load the config file
 		'''
 		with open(configPath, 'r') as file:
-			result = Confugration.__load__(json.loads(file.read()))
+			result = Configuration.__load__(json.loads(file.read()))
 		return result

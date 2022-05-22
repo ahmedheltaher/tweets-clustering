@@ -6,8 +6,8 @@ from os.path import exists
 
 from tqdm import tqdm  # Import the tqdm module
 
-from app.utils.configrationReader import \
-    Confugration  # Import the Confugration class to read the config file
+from app.utils.configurationReader import \
+    Configuration  # Import the Confugration class to read the config file
 from app.utils.files import \
     filesInDirectory  # Import the filesInDirectory function from the files module
 
@@ -110,7 +110,7 @@ def main():
 			# The main function
 	'''
 
-	config = Confugration.load_json("./config/conversion.json")
+	config = Configuration.load_json("./config/conversion.json")
 
 	if not exists(config["inputDirectory"]):  # Check if the input directory exists
 		print(

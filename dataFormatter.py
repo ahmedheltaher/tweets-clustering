@@ -6,7 +6,7 @@ from typing import List
 
 from tqdm import tqdm  # Import the tqdm module
 
-from app.utils.configrationReader import Confugration
+from app.utils.configurationReader import Configuration
 from app.utils.files import filesInDirectory
 
 MENTION_PATTERN = r'@([a-zA-Z0-9-_]{1,})'
@@ -39,7 +39,7 @@ def formatLine(line: List[str]) -> None:
 
 	extractedHashtags = re.findall(HASHTAG_PATTERN, tweet) # Extract the hashtags from the tweet
 	hashtags = ','.join(extractedHashtags) # combine the hashtags into a string
-	tweet = re.sub(HASHTAG_PATTERN, '', tweet) # Remove the hashtags from the tweet
+	tweet = tweet.replace("#", "").replace("_", ' ') # Remove the hashtags from the tweet
 
 	tweet = tweet.replace(" : ", "").strip() # Remove the : from the tweet and trim the spaces
 
@@ -105,7 +105,7 @@ def main():
 			# This will format the data
 	'''
 
-	config = Confugration.load_json("./config/formatting.json") # Load the config file
+	config = Configuration.load_json("./config/formatting.json") # Load the config file
 
 	if not exists(config["inputDirectory"]):  # Check if the input directory exists
 		print(f'The input directory { config["inputDirectory"] } does not exist\n')
