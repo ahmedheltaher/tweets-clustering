@@ -234,8 +234,8 @@ def compute_SSE(clusters):
     return sse
 
 if __name__ == '__main__':
-
-    data_url = 'dataset/original/everydayhealth.txt'
+    from app.model.kmeans import KMeans
+    data_url = 'dataset/original/bbchealth.txt'
 
 
     tweets = pre_process_tweets(data_url)
@@ -247,19 +247,26 @@ if __name__ == '__main__':
     clustersCount = 5
     sses = []
     # for every experiment 'e', run K-means
+
+    model = KMeans(clustersCount)
+
     for e in range(experiments):
 
         print("------ Running K means for experiment no. " + str((e + 1)) + " for k = " + str(clustersCount))
 
-        clusters, sse = k_means(tweets, clustersCount)
-        sses.append(sse)
+        model.fit(tweets);
+
+        #clusters, sse = k_means(tweets, clustersCount)
+        sses.append(model.getSSE())
         
-        print("--> SSE : " + str(sse))
+        print("--> SSE : " + str(model.getSSE()))
         print('\n')
 
 
         # increment k after every experiment
         clustersCount += 1
+        model.reset()
+        model.setClustersCount(clustersCount)
 
     # scatter plot of tweets with their respective centroid
     plt.figure(figsize=(10, 10))
