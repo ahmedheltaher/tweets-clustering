@@ -1,4 +1,5 @@
-import math
+
+import multiprocessing
 import threading
 
 import mplcursors
@@ -17,6 +18,8 @@ from PyQt5 import QtGui, QtWidgets
 class Window(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
         super().__init__()
+        self.processes = []
+        
         self.splashScreen = SplashScreen()
         self.clusteringThread = None
         self.setWindowTitle("PyQt5 Matplotlib example")
@@ -179,27 +182,46 @@ class Window(QtWidgets.QMainWindow):
     def clusteringThreadFunction(self):
         dataSetFile = pandas.read_csv(f'dataset/csv/{self.selectDataSetFile.currentText()}.csv')
         # Extract the tweets from the data set
-        tweets = [tweet for tweet in dataSetFile['tweet'].astype(str)]
+        tweets = [tweet.split() for tweet in dataSetFile['tweet'].astype(str)]
         # default number of experiments to be performed
         experiments = self.experimentsCount.value()
         # default value of K for K-means
         clustersCount = self.clusterCount.value()
-        sses = []
-        model = KMeans(clustersCount)
-        for e in range(experiments):
-            self.__updateStatus(f"Running experiment {e + 1} for k = {clustersCount}")
-            model.fit(tweets)
-            sses.append(model.getSSE())
+        manager = multiprocessing.Manager()
+        return_dict = manager.dict()
+        #self.finishedProcesses = 0
+        for i in range(experiments):
+            process = multiprocessing.Process(target=self.__performClustering, args=(clustersCount + i, return_dict, tweets,  experiments * (i + 1)))
+            self.processes.append(process)
+            process.start()
+            
 
-            # increment k after every experiment
-            clustersCount += 1
+        for process in  self.processes:
+            process.join()
 
-            model.reset()
-            model.setClustersCount(clustersCount)
-            self.splashScreen.progressBar.setValue(math.floor(100 / experiments * (e + 1)))
+        ##sses = []
+        #model = KMeans(clustersCount)
+        #for e in range(experiments):
+        #    self.__updateStatus(f"Running experiment {e + 1} for k = {clustersCount}")
+        #    model.fit(tweets)
+        #    sses.append(model.getSSE())
 
+        #    # increment k after every experiment
+        #    clustersCount += 1
+
+        #    model.reset()
+        #    model.setClustersCount(clustersCount)
+        print(return_dict)
         self.splashScreen.close()
-        self.__plot([i + 1 for i in range(abs(experiments - clustersCount + 1), clustersCount - 1)], sses)
+        self.__plot(sorted(list(return_dict.keys())), [return_dict[key] for key in sorted(list(return_dict.keys()))])
+
+    def __performClustering(self, clustersCount, sses, tweets, c):
+        model = KMeans(clustersCount)
+        model.fit(tweets)
+        sses[clustersCount] = model.getSSE()
+        #self.finishedProcesses += 1
+        #self.splashScreen.progressBar.setValue(math.floor(100 / self.finishedProcesses))
+
 
     def __plot(self, xData=[], yData=[]):
         # create an axis
@@ -219,5 +241,6 @@ class Window(QtWidgets.QMainWindow):
 
     def closeEvent(self, event):
         self.splashScreen.close()
-        self.clusteringThread.raise_exception()
+        for process in  self.processes:
+            process.terminate()
         event.accept()

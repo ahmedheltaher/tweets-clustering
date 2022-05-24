@@ -45,10 +45,16 @@ class KMeans:
             print("converged")
 
     def __isConverged(self) -> bool:
-        _previousCentroid = numpy.array(self.__previousCentroids, dtype=object)
-        _centroids = numpy.array(self.__centroids, dtype=object)
-        return numpy.array_equal(_previousCentroid, _centroids)
+            # false if lengths are not equal
+        if len(self.__previousCentroids) != len(self.__centroids):
+            return False
 
+        # iterate over each entry of clusters and check if they are same
+        for c in range(len(self.__centroids)):
+            if " ".join(self.__centroids[c]) != " ".join(self.__previousCentroids[c]):
+                return False
+
+        return True
     def __assignCluster(self, tweets: List[any]):
         self.__clusters = {}
         # for every tweet iterate each centroid and assign closest centroid to a it
@@ -88,10 +94,14 @@ class KMeans:
                 distanceMemory.append([])
                 distanceSum = 0
                 for otherIndex, otherTweet in enumerate(self.__clusters[cluster]):
-                    if otherIndex < index:
-                        distance = distanceMemory[otherIndex][index]
+                    if index != otherIndex:
+
+                        if otherIndex < index:
+                            distance = distanceMemory[otherIndex][index]
+                        else:
+                            distance = self.__getDistance(tweet[0], otherTweet[0])
                     else:
-                        distance = self.__getDistance(tweet[0], otherTweet[0])
+                        distance = 0
 
                     distanceMemory[index].append(distance)
                     distanceSum += distance
@@ -103,8 +113,14 @@ class KMeans:
 
             self.__centroids.append(self.__clusters[cluster][closestTweet][0])
 
-    def __getDistance(self, centroid: list[any], tweet: list[any]) -> float:
-        return 1 - (len(list(set(centroid).intersection(set(tweet)))) / len(list(set(centroid).union(set(tweet)))))
+    def __getDistance(self, tweet1: list[any], tweet2: list[any]) -> float:
+        intersection = set(tweet1).intersection(tweet2)
+
+        # get the union
+        union = set().union(tweet1, tweet2)
+
+        # return the jaccard distance
+        return 1 - (len(intersection) / len(union))
 
     def getSSE(self):
         if self.__sse == 0:

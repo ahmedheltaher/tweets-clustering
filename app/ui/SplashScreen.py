@@ -108,8 +108,6 @@ class SplashScreen(QtWidgets.QDialog):
         self.timer.start()
 
     def update(self):
-        if self.i >= 5:
-            self.i = 0;
+        self.i = 0 if self.i == 5 else self.i + 1
         self.labelLoading.setText(f'loading{self.i * "."}')
         self.labelLoading.repaint()
-        self.i += 1
