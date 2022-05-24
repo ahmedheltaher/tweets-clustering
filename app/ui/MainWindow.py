@@ -1,4 +1,5 @@
 
+import math
 import multiprocessing
 import threading
 
@@ -19,6 +20,7 @@ class Window(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
         super().__init__()
         self.processes = []
+        self.finishedProcesses = 0
         
         self.splashScreen = SplashScreen()
         self.clusteringThread = None
@@ -189,39 +191,22 @@ class Window(QtWidgets.QMainWindow):
         clustersCount = self.clusterCount.value()
         manager = multiprocessing.Manager()
         return_dict = manager.dict()
-        #self.finishedProcesses = 0
         for i in range(experiments):
-            process = multiprocessing.Process(target=self.__performClustering, args=(clustersCount + i, return_dict, tweets,  experiments * (i + 1)))
+            process = multiprocessing.Process(target=self.__performClustering, args=(clustersCount + i, return_dict, tweets))
             self.processes.append(process)
             process.start()
-            
 
         for process in  self.processes:
             process.join()
 
-        ##sses = []
-        #model = KMeans(clustersCount)
-        #for e in range(experiments):
-        #    self.__updateStatus(f"Running experiment {e + 1} for k = {clustersCount}")
-        #    model.fit(tweets)
-        #    sses.append(model.getSSE())
-
-        #    # increment k after every experiment
-        #    clustersCount += 1
-
-        #    model.reset()
-        #    model.setClustersCount(clustersCount)
         print(return_dict)
         self.splashScreen.close()
         self.__plot(sorted(list(return_dict.keys())), [return_dict[key] for key in sorted(list(return_dict.keys()))])
 
-    def __performClustering(self, clustersCount, sses, tweets, c):
+    def __performClustering(self, clustersCount, sses, tweets):
         model = KMeans(clustersCount)
         model.fit(tweets)
         sses[clustersCount] = model.getSSE()
-        #self.finishedProcesses += 1
-        #self.splashScreen.progressBar.setValue(math.floor(100 / self.finishedProcesses))
-
 
     def __plot(self, xData=[], yData=[]):
         # create an axis
