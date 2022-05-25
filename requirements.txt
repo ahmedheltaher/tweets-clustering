@@ -5,11 +5,13 @@ matplotlib==3.5.2
 mplcursors==0.5.1
 numpy==1.22.4
 packaging==21.3
+pandas==1.4.2
 Pillow==9.1.1
 pyparsing==3.0.9
 PyQt5==5.15.6
 PyQt5-Qt5==5.15.2
 PyQt5-sip==12.10.1
 python-dateutil==2.8.2
+pytz==2022.1
 six==1.16.0
 tqdm==4.64.0

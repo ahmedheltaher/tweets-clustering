@@ -45,16 +45,16 @@ class KMeans:
             print("converged")
 
     def __isConverged(self) -> bool:
-            # false if lengths are not equal
+        # false if lengths are not equal
         if len(self.__previousCentroids) != len(self.__centroids):
             return False
 
-        # iterate over each entry of clusters and check if they are same
-        for c in range(len(self.__centroids)):
-            if " ".join(self.__centroids[c]) != " ".join(self.__previousCentroids[c]):
+        for current, previous in zip(self.__centroids, self.__previousCentroids):
+            if current != previous:
                 return False
 
         return True
+
     def __assignCluster(self, tweets: List[any]):
         self.__clusters = {}
         # for every tweet iterate each centroid and assign closest centroid to a it
@@ -114,13 +114,8 @@ class KMeans:
             self.__centroids.append(self.__clusters[cluster][closestTweet][0])
 
     def __getDistance(self, tweet1: list[any], tweet2: list[any]) -> float:
-        intersection = set(tweet1).intersection(tweet2)
-
-        # get the union
-        union = set().union(tweet1, tweet2)
-
         # return the jaccard distance
-        return 1 - (len(intersection) / len(union))
+        return 1 - (len(set(tweet1).intersection(tweet2)) / len(set().union(tweet1, tweet2)))
 
     def getSSE(self):
         if self.__sse == 0:

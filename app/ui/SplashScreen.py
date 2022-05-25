@@ -5,7 +5,7 @@ class SplashScreen(QtWidgets.QDialog):
     def __init__(self):
         self.i = 1
         super().__init__()
-        self.setWindowTitle('Spash Screen Example')
+        self.setWindowTitle('Tweets Clustering')
         self.setFixedSize(1100, 500)
         self.setWindowFlag(QtCore.Qt.FramelessWindowHint)
         
@@ -39,7 +39,7 @@ class SplashScreen(QtWidgets.QDialog):
         # center labels
         self.labelTitle.resize(self.width() - 10, 150)
         self.labelTitle.move(0, 40)  # x, y
-        self.labelTitle.setText('Splash Screen')
+        self.labelTitle.setText('Running Clustering Experiments')
         self.labelTitle.setAlignment(QtCore.Qt.AlignCenter)
 
         self.labelDescription = QtWidgets.QLabel(self.frame)

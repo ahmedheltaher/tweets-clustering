@@ -13,18 +13,19 @@ from matplotlib.backends.backend_qt5agg import \
 from matplotlib.backends.backend_qt5agg import \
     NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
-from PyQt5 import QtGui, QtWidgets
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 
 class Window(QtWidgets.QMainWindow):
-    def __init__(self, parent=None):
+    def __init__(self):
         super().__init__()
         self.processes = []
-        self.finishedProcesses = 0
-        
+        self.manager = multiprocessing.Manager()
+        self.return_dict = self.manager.dict()
+
         self.splashScreen = SplashScreen()
         self.clusteringThread = None
-        self.setWindowTitle("PyQt5 Matplotlib example")
+        self.setWindowTitle("Tweets Clustering")
         self.setGeometry(5, 30, 1920, 1080)
 
         # Create matplotlib figure and axes
@@ -37,24 +38,45 @@ class Window(QtWidgets.QMainWindow):
         self.button.clicked.connect(self.__experimentsControl)
         self.button.setFont(QtGui.QFont("Arial", 18))
 
+        self.dummyLabel = QtWidgets.QLabel("Dummy")
+        self.dummyLabel.setFont(QtGui.QFont("Arial", 18))
+        self.dummyLabel.setStyleSheet("color: #2F4454;");
+
+
         dataSetFiles = [file.removesuffix(".csv") for file in sorted(filesInDirectory('dataset/csv/')) if file.endswith('.csv')]
         self.selectDataSetFile = QtWidgets.QComboBox()
         self.selectDataSetFile.addItems(dataSetFiles)
         self.selectDataSetFile.setCurrentIndex(2)
         self.selectDataSetFile.setFont(QtGui.QFont("Arial", 18))
         
+        self.selectDataSetFileLabel = QtWidgets.QLabel("Select Data Set File:")
+        self.selectDataSetFileLabel.setFont(QtGui.QFont("Arial", 18))
+
 
         self.clusterCount = QtWidgets.QSpinBox()
         self.clusterCount.setValue(3)
         self.clusterCount.setFont(QtGui.QFont("Arial", 18))
 
+        self.clusterCountLabel = QtWidgets.QLabel("Number of Clusters:")
+        self.clusterCountLabel.setFont(QtGui.QFont("Arial", 18))
+
         self.experimentsCount = QtWidgets.QSpinBox()
         self.experimentsCount.setValue(5)
         self.experimentsCount.setFont(QtGui.QFont("Arial", 18))
 
+        self.experimentsCountLabel = QtWidgets.QLabel("Number of Experiments:")
+        self.experimentsCountLabel.setFont(QtGui.QFont("Arial", 18))
 
         self.statusLabel = QtWidgets.QLabel("Status:")
         self.statusLabel.setFont(QtGui.QFont("Arial", 18))
+
+         # Top Control bar layout =================================================
+        topLabels = QtWidgets.QHBoxLayout()
+        topLabels.addWidget(self.selectDataSetFileLabel, 1)
+        topLabels.addWidget(self.clusterCountLabel, 1)
+        topLabels.addWidget(self.experimentsCountLabel, 1)
+        topLabels.addWidget(self.dummyLabel)
+        # Top Control bar layout =================================================
 
         # Top Control bar layout =================================================
         topControlsBox = QtWidgets.QHBoxLayout()
@@ -72,6 +94,7 @@ class Window(QtWidgets.QMainWindow):
 
         # Main Layout =============================================================
         mainLayout = QtWidgets.QVBoxLayout()
+        mainLayout.addLayout(topLabels)
         mainLayout.addLayout(topControlsBox)
         mainLayout.addWidget(self.statusLabel)
         mainLayout.addLayout(canvasBox, 1)
@@ -94,6 +117,10 @@ class Window(QtWidgets.QMainWindow):
             QPushButton {
                 background-color: #376E6F;
                 color: #FFFFFF;
+            }
+
+            #dummyLabel {
+                color: #2F4454;
             }
 
             QPushButton:hover {
@@ -170,6 +197,16 @@ class Window(QtWidgets.QMainWindow):
                 color: #2F4454;
             }
         ''')
+        self.timer = QtCore.QTimer()
+        self.timer.setInterval(100)
+        self.timer.timeout.connect(self._update)
+        self.timer.start()
+
+    def _update(self):
+        finished = len(list(self.return_dict.keys()))
+        self.splashScreen.progressBar.setValue(math.floor(100 * finished / self.experimentsCount.value()))
+        self.splashScreen.labelDescription.setText("Experiment: " + str(finished) + "/" + str(self.experimentsCount.value()))
+
     def __experimentsControl(self):
         self.splashScreen.show()
         self.splashScreen.progressBar.setValue(0)
@@ -189,19 +226,17 @@ class Window(QtWidgets.QMainWindow):
         experiments = self.experimentsCount.value()
         # default value of K for K-means
         clustersCount = self.clusterCount.value()
-        manager = multiprocessing.Manager()
-        return_dict = manager.dict()
+
         for i in range(experiments):
-            process = multiprocessing.Process(target=self.__performClustering, args=(clustersCount + i, return_dict, tweets))
+            process = multiprocessing.Process(target=self.__performClustering, args=(clustersCount + i, self.return_dict, tweets))
             self.processes.append(process)
             process.start()
 
         for process in  self.processes:
             process.join()
 
-        print(return_dict)
         self.splashScreen.close()
-        self.__plot(sorted(list(return_dict.keys())), [return_dict[key] for key in sorted(list(return_dict.keys()))])
+        self.__plot(sorted(list(self.return_dict.keys())), [self.return_dict[key] for key in sorted(list(self.return_dict.keys()))])
 
     def __performClustering(self, clustersCount, sses, tweets):
         model = KMeans(clustersCount)
