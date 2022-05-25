@@ -7,7 +7,7 @@ import mplcursors
 import pandas
 from app.model.kmeans import KMeans
 from app.ui.SplashScreen import SplashScreen
-from app.utils.files import filesInDirectory
+from app.utils.files import countRowsInCSV, filesInDirectory
 from matplotlib.backends.backend_qt5agg import \
     FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import \
@@ -43,9 +43,12 @@ class Window(QtWidgets.QMainWindow):
         self.dummyLabel.setStyleSheet("color: #2F4454;");
 
 
-        dataSetFiles = [file.removesuffix(".csv") for file in sorted(filesInDirectory('dataset/csv/')) if file.endswith('.csv')]
+        dataSetFiles = [{"name": file.removesuffix(".csv"), "rowsCount": countRowsInCSV(f'dataset/csv/{file}')} for file in sorted(filesInDirectory('dataset/csv/')) if file.endswith('.csv')]
         self.selectDataSetFile = QtWidgets.QComboBox()
-        self.selectDataSetFile.addItems(dataSetFiles)
+        #self.selectDataSetFile.addItems(dataSetFiles)
+        for index, file in enumerate(dataSetFiles):
+            self.selectDataSetFile.addItem(file['name'])
+            self.selectDataSetFile.setItemData(index, f"This File Contains: {file['rowsCount']} tweet", QtCore.Qt.ToolTipRole)
         self.selectDataSetFile.setCurrentIndex(2)
         self.selectDataSetFile.setFont(QtGui.QFont("Arial", 18))
         

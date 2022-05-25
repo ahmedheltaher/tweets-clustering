@@ -23,3 +23,24 @@ def filesInDirectory(dir: str) -> list[str]:
 	'''
 
 	return [f for f in listdir(dir) if isfile(join(dir, f))]
+
+def countRowsInCSV(file: str) -> int:
+    '''
+        Returns the number of rows in a csv file
+
+        Parameters
+        ---------- 
+            file: str
+                file to count rows
+        Returns
+        -------
+            int
+                number of rows in the file
+        
+        Example
+        -------
+            >>> countRowsInCSV(INPUT_FILE)
+            10
+    '''
+
+    return sum(1 for line in open(file))

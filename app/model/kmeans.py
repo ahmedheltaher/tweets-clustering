@@ -1,10 +1,56 @@
 import random
 from typing import List
 
-import numpy
-
 
 class KMeans:
+    '''
+        This Class is used to Perform K-Means Clustering on a given set of tweets
+        The tweets are represented as a list of lists of strings
+
+        Methods:
+        --------
+            fit:
+                This method takes a list of tweets as input and performs k-means clustering on it
+            getCentroids:
+                This method returns the centroids of the clusters formed
+            getClusters:
+                This method returns the clusters formed
+            getSSE:
+                This method returns the sum of squared errors of the clusters formed
+
+
+        Attributes:
+        -----------
+            __clustersCount:
+                The number of clusters to be formed
+            __maxIterations:
+                The maximum number of iterations to be performed
+            __centroids:
+                The centroids of the clusters formed
+            __previousCentroids:
+                The centroids of the clusters formed in the previous iteration
+            __clusters:
+                The clusters formed
+            __indicesTable:
+                A dictionary that keeps track of the indices of the tweets that have been assigned to a centroid
+            __iterationCount:
+                The number of iterations performed
+            __sse:
+                The sum of squared errors of the clusters formed
+
+
+        Example:
+        --------
+            >>> tweets = [['a', 'b', 'c'], ['d', 'e', 'f'], ['g', 'h', 'i'], ['j', 'k', 'l']]
+
+             >>> kmeans = KMeans(clustersCount=2)
+             >>> kmeans.fit(tweets)
+             >>> centroids = kmeans.getCentroids()
+             >>> clusters = kmeans.getClusters()
+             >>> sse = kmeans.getSSE()
+
+    '''
+    
     def __init__(self, clustersCount=4, maxIterations=50):
         self.__clustersCount = clustersCount
         self.__maxIterations = maxIterations
@@ -15,7 +61,27 @@ class KMeans:
         self.__iterationCount = 0
         self.__sse = 0
 
-    def fit(self, tweets: List[any]):
+    def fit(self, tweets: List[List[str]]) -> None:
+        '''
+            This method takes a list of tweets as input and performs k-means clustering on it
+
+            Parameters:
+            -----------
+                tweets:
+                    A list of tweets represented as a list of lists of strings
+
+            Returns:
+            --------
+                None
+
+            Example:
+            --------
+
+                >>> tweets = [['a', 'b', 'c'], ['d', 'e', 'f'], ['g', 'h', 'i'], ['j', 'k', 'l']]
+
+                >>> kmeans = KMeans(clustersCount=2)
+                >>> kmeans.fit(tweets)
+        '''
         # initialization, assign random tweets as centroids
 
         for _ in range(self.__clustersCount):
@@ -45,17 +111,49 @@ class KMeans:
             print("converged")
 
     def __isConverged(self) -> bool:
-        # false if lengths are not equal
-        if len(self.__previousCentroids) != len(self.__centroids):
+        '''
+            This method checks if k-means converged
+
+            Parameters:
+            -----------
+                None
+
+            Returns:
+            --------
+                True if converged, False otherwise
+
+            Example:
+            --------
+
+                >>> tweets = [['a', 'b', 'c'], ['d', 'e', 'f'], ['g', 'h', 'i'], ['j', 'k', 'l']]
+
+                >>> kmeans = KMeans(clustersCount=2)
+                >>> kmeans.fit(tweets)
+                >>> kmeans.__isConverged()
+                True
+        '''
+        if len(self.__centroids) == 0:
             return False
 
-        for current, previous in zip(self.__centroids, self.__previousCentroids):
-            if current != previous:
+        for index, centroid in enumerate(self.__centroids):
+            if centroid != self.__previousCentroids[index]:
                 return False
-
         return True
 
-    def __assignCluster(self, tweets: List[any]):
+
+    def __assignCluster(self, tweets: List[List[str]]):
+        '''
+            This method assigns tweets to the closest centroids
+
+            Parameters:
+            -----------
+                tweets:
+                    A list of tweets represented as a list of lists of strings
+
+            Returns:
+            --------
+                None
+        '''
         self.__clusters = {}
         # for every tweet iterate each centroid and assign closest centroid to a it
         for tweet in tweets:
@@ -83,6 +181,17 @@ class KMeans:
             self.__clusters[closestCentroid][lastTweetIndex].append(minDistance)
 
     def __updateCentroids(self):
+        '''
+            This method updates the centroids based on the clusters formed
+
+            Parameters:
+            -----------
+                None
+
+            Returns:
+            --------
+                None
+        '''
         self.__centroids = []
         for cluster in self.__clusters.keys():
             minDistanceSum = float('inf')
@@ -113,11 +222,57 @@ class KMeans:
 
             self.__centroids.append(self.__clusters[cluster][closestTweet][0])
 
-    def __getDistance(self, tweet1: list[any], tweet2: list[any]) -> float:
+    def __getDistance(self, tweet1: list[List[str]], tweet2: list[List[str]]) -> float:
+        '''
+            This method calculates the distance between two tweets
+
+            Parameters:
+            -----------
+                tweet1:
+                    A list of strings representing a tweet
+
+                tweet2:
+                    A list of strings representing a tweet
+
+            Returns:
+            --------
+                The distance between the two tweets
+
+            Example:
+            --------
+
+                >>> tweets = [['a', 'b', 'c'], ['d', 'e', 'f'], ['g', 'h', 'i'], ['j', 'k', 'l']]
+
+                >>> kmeans = KMeans(clustersCount=2)
+                >>> kmeans.fit(tweets)
+                >>> kmeans.__getDistance(tweets[0], tweets[1])
+                1.0
+        '''
         # return the jaccard distance
         return 1 - (len(set(tweet1).intersection(tweet2)) / len(set().union(tweet1, tweet2)))
 
     def getSSE(self):
+        '''
+            This method calculates the sum of squared errors
+
+            Parameters:
+            -----------
+                None
+
+            Returns:
+            --------
+                The sum of squared errors
+
+            Example:
+            --------
+
+                >>> tweets = [['a', 'b', 'c'], ['d', 'e', 'f'], ['g', 'h', 'i'], ['j', 'k', 'l']]
+
+                >>> kmeans = KMeans(clustersCount=2)
+                >>> kmeans.fit(tweets)
+                >>> kmeans.getSSE()
+                0.0
+        '''
         if self.__sse == 0:
             self.__calculateSSE()
         return self.__sse
@@ -127,25 +282,8 @@ class KMeans:
             for tweet in self.__clusters[cluster]:
                 self.__sse += tweet[1] ** 2
 
-    def setClustersCount(self, clustersCount):
-        self.__clustersCount = clustersCount
-
-    def setMaxIterations(self, maxIterations):
-        self.__maxIterations = maxIterations
-
     def getCentroids(self):
         return self.__centroids
 
     def getClusters(self):
         return self.__clusters
-
-    def reset(self):
-        self.__centroids = []
-        self.__previousCentroids = []
-        self.__clusters = {}
-        self.__sse = 0
-        self.__iterationCount = 0
-        self.__indicesTable = {}
-
-
-
