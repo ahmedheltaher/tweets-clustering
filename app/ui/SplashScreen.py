@@ -63,7 +63,7 @@ class SplashScreen(QtWidgets.QDialog):
         self.labelLoading.move(0, self.progressBar.y() + 70)
         self.labelLoading.setObjectName('LabelLoading')
         self.labelLoading.setAlignment(QtCore.Qt.AlignCenter)
-        self.labelLoading.setText('loading...')
+        self.labelLoading.setText('Clustering...')
 
         self.setStyleSheet('''
             #LabelTitle {
@@ -109,5 +109,5 @@ class SplashScreen(QtWidgets.QDialog):
 
     def update(self):
         self.i = 0 if self.i == 5 else self.i + 1
-        self.labelLoading.setText(f'loading{self.i * "."}')
+        self.labelLoading.setText(f'Clustering{self.i * "."}')
         self.labelLoading.repaint()
