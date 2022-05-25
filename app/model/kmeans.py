@@ -132,12 +132,13 @@ class KMeans:
                 >>> kmeans.__isConverged()
                 True
         '''
-        if len(self.__centroids) == 0:
+        if len(self.__previousCentroids) != len(self.__centroids):
             return False
 
-        for index, centroid in enumerate(self.__centroids):
-            if centroid != self.__previousCentroids[index]:
+        for current, previous in zip(self.__centroids, self.__previousCentroids):
+            if current != previous:
                 return False
+
         return True
 
 
